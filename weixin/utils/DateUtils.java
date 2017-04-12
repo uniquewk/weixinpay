@@ -1,16 +1,6 @@
 package com.fs.module.weixin.utils;
 
-import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.Date;
-import java.util.Map;
-
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 /**
  * 
@@ -30,10 +20,10 @@ public class DateUtils {
 	 * 
 	 * @return
 	 */
-	public static long getCurrentTimestamp() {
+	public static String getCurrentTimestamp() {
 
 		long timeStamp = new Date().getTime();
-		return timeStamp;
+		return String.valueOf(timeStamp);
 	}
 
 	public static String getCurrentTimestamp10() {
@@ -48,12 +38,16 @@ public class DateUtils {
 		return String.valueOf(time);
 	}
 
-	public static void main(String[] args) throws JsonGenerationException, JsonMappingException, IOException {
-		System.out.println(DateUtils.getTimeStamp());
-		Map<String,String> map = Maps.newHashMap();
-//		map.put("package", "Sign=Wxpay");
-		ObjectMapper mapper = new ObjectMapper();
-		String str = mapper.writeValueAsString(map);
-		System.out.println(str);
-		}
+	/*
+	 * public static void main(String[] args) throws JsonGenerationException,
+	 * JsonMappingException, IOException {
+	 * System.out.println(DateUtils.getTimeStamp()); Map<String,String> map =
+	 * Maps.newHashMap(); map.put("package", "Sign=Wxpay"); ObjectMapper mapper
+	 * = new ObjectMapper(); String str = mapper.writeValueAsString(map);
+	 * System.out.println(str); }
+	 */
+	
+	public static void main(String[] args) {
+		System.out.println(getTimeStamp());
+	}
 }

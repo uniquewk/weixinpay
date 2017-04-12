@@ -3,10 +3,10 @@ package com.fs.module.weixin.utils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -25,13 +25,14 @@ public class MapUtils {
 	 * @return
 	 */
 	public static SortedMap<String, Object> sortMap(Map<String, Object> map) {
-        
+
 		List<Map.Entry<String, Object>> infoIds = new ArrayList<Map.Entry<String, Object>>(
 				map.entrySet());
 		// 排序前
-		/*for (int i = 0; i < infoIds.size(); i++) {
-			System.out.println(infoIds.get(i).toString());
-		}*/
+		/*
+		 * for (int i = 0; i < infoIds.size(); i++) {
+		 * System.out.println(infoIds.get(i).toString()); }
+		 */
 
 		// 排序
 		Collections.sort(infoIds, new Comparator<Map.Entry<String, Object>>() {
@@ -49,19 +50,37 @@ public class MapUtils {
 		}
 		return sortmap;
 	}
-	
-	
-	
-	public void getSortMap() throws Exception {
-		Map<String, Object> params = new HashMap<String, Object>();
-		params.put("nonceStr", PayCommonUtil.CreateNoncestr());
-		params.put("package", "prepay_id=" + ("prepay_id"));
-		params.put("partnerId", ConfigUtil.MCH_ID);
-		params.put("prepayId", ("prepay_id"));
-		params.put("signType", ConfigUtil.SIGN_TYPE);
-		params.put("timeStamp", Long.toString(new Date().getTime()));
-		SortedMap<String, Object> sortMap = MapUtils.sortMap(params);
-		System.out.println(sortMap);
+
+	/**
+	 * map to String
+	 * 
+	 * @param map
+	 * @return
+	 */
+	public static String toString(Map<String, Object> map) {
+		StringBuffer buf = new StringBuffer();
+		buf.append("{");
+		Iterator<Entry<String, Object>> i = map.entrySet().iterator();
+		boolean hasNext = i.hasNext();
+		while (hasNext) {
+			Entry<String, Object> e = i.next();
+			Object key = e.getKey();
+			Object value = e.getValue();
+			if (key == MapUtils.class)
+				buf.append("(this Map)");
+			else
+				buf.append(key);
+			buf.append("=");
+			if (value == MapUtils.class)
+				buf.append("(this Map)");
+			else
+				buf.append(value);
+			hasNext = i.hasNext();
+			if (hasNext)
+				buf.append(", ");
+		}
+		buf.append("}");
+		return buf.toString();
 	}
 
 }

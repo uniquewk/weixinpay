@@ -6,27 +6,33 @@ package com.fs.module.weixin.utils;
  * @2016年5月31日 下午8:37:21
  * @desc:微信支付相关配置信息
  */
+
 public class ConfigUtil {
 	/**
 	 * 服务号相关信息
 	 */
-	public final static String APPID = "wx53da9axxxxxxx";// 应用号
-	public final static String APP_SECRECT = "xxxxx5f284b707c040xxxxxxxxx";// 应用密码
+	public final static String APPID = "xxxx";// 应用号
+	public final static String APP_SECRECT = "xxxxx";// 应用密码
 	// public final static String TOKEN = "weixinCourse";//服务号的配置token
-	public final static String MCH_ID = "1xxxxxxx";// 商户号 1218488501 公众号商户id
-														// 1224785302
-	public final static String API_KEY = "7c8881a41xxxxxxxxxxxxx";// API密钥
+	public final static String MCH_ID = "xxx";// 商户号 xxxx 公众号商户id
+														// xxxxx
+	public final static String API_KEY = "xxxxx";// API密钥
 	public final static String SIGN_TYPE = "MD5";// 签名加密方式
 	public final static String TRADE_TYPE = "APP";// 支付类型
+	
+	public final static String CERT_FILE = System.getProperty("user.dir")
+			+ System.getProperty("file.separator")+"fscert"+System.getProperty("file.separator")+"apiclient_cert.p12";//微信企业支付证书
 
-	// public final static String CERT_PATH =
-	// "/Users/kevin/apiclient_cert.p12";//微信支付证书存放路径地址
-	// 微信支付统一接口的回调
-	public final static String NOTIFY_URL = "http://ip:port/weixin/pay/callback/pay.action";
+	// 微信支付统一接口的回调actionhttp://newcapi2.test.xxxxx.com
+	// 本地 使用 public final static String NOTIFY_URL = "http://newcapi2.test.xxxxx.com/weixin/pay/callback/pay.action";
+	// 测试服 使用 
+	public final static String NOTIFY_URL = "https://pay-test1.xxxxxx.com/weixin/pay/callback/pay.action";
+	// 正式服 使用如下
+//	public final static String NOTIFY_URL = "https://pay.xxxxxx.com/weixin/pay/callback/pay.action";
 	// 微信支付成功支付后跳转的地址 web端使用
-	public final static String SUCCESS_URL = "http://ip:port/wxweb/contents/config/pay_success.jsp";
+	public final static String SUCCESS_URL = "http://14.117.25.80:8016/wxweb/contents/config/pay_success.jsp";
 	// oauth2授权时回调action
-	public final static String REDIRECT_URI = "http://ip:port/GoMyTrip/a.jsp?port=8016";
+	public final static String REDIRECT_URI = "http://14.117.25.80:8016/GoMyTrip/a.jsp?port=8016";
 	/**
 	 * 微信基础接口地址
 	 */
@@ -42,6 +48,8 @@ public class ConfigUtil {
 	public final static String MENU_GET_URL = "https://api.weixin.qq.com/cgi-bin/menu/get?access_token=ACCESS_TOKEN";
 	// 菜单删除（GET）
 	public final static String MENU_DELETE_URL = "https://api.weixin.qq.com/cgi-bin/menu/delete?access_token=ACCESS_TOKEN";
+	
+	
 	/**
 	 * 微信支付接口地址
 	 */
@@ -61,4 +69,12 @@ public class ConfigUtil {
 	public final static String SHORT_URL = "https://api.mch.weixin.qq.com/tools/shorturl";
 	// 接口调用上报接口(POST)
 	public final static String REPORT_URL = "https://api.mch.weixin.qq.com/payitil/report";
+	
+	/**
+	 * 企业付款地址
+	 */
+	// 企业付款接口(POST)
+	public final static String PROMOTION_URL = "https://api.mch.weixin.qq.com/mmpaymkttransfers/promotion/transfers";
+	// 企业付款查询接口(POST)
+	public final static String PROMOTION_QUERY_URL = "https://api.mch.weixin.qq.com/mmpaymkttransfers/gettransferinfo";
 }

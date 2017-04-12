@@ -14,15 +14,17 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.jboss.resteasy.spi.HttpRequest;
+
 import com.alibaba.dubbo.common.utils.StringUtils;
 import com.alibaba.fastjson.JSONObject;
 import com.fs.common.HttpResult;
 import com.fs.common.RestResult;
 import com.fs.common.service.controller.AbstrackController;
-import com.fs.module.weixin.logic.WeixinLogic;
+import com.fs.module.weixin.logic.WeixinAppPayLogic;
 import com.fs.module.weixin.utils.ConfigUtil;
 import com.fs.module.weixin.utils.MapUtils;
 import com.fs.module.weixin.utils.PayCommonUtil;
+import com.fs.service.api.user.po.UserBaseInfoPo;
 import com.fs.util.AuthUtil;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -33,18 +35,17 @@ import com.google.inject.Inject;
  * @desc:APP微信支付入口
  */
 @Path(value = "/weixin/pay")
-@Produces(MediaType.APPLICATION_JSON)
-public class WeixinController extends AbstrackController {
+public class WeixinAppPayController extends AbstrackController {
 
 	@Inject
-	private WeixinLogic weixinLogic;
+	private WeixinAppPayLogic weixinAppPayLogic;
 
 	/**
 	 * 微信支付 统一下订单入口
 	 * 
 	 * @param ip
 	 * @param authorization
-	 * @param proId
+	 * @param pro
 	 * @param price
 	 * @param time
 	 * @return
@@ -60,12 +61,11 @@ public class WeixinController extends AbstrackController {
 			@FormParam("price") final int price// 支付money
 	) {
 		logger.info("weixin_pay unifiedOrder: " + authorization + "-" + proId);
-		String userId = AuthUtil.getUserIdFrom(authorization);
-		if (StringUtils.isEmpty(userId)) {
+		UserBaseInfoPo user = new AuthUtil().getUserIdFrom(authorization);
+		if (user == null || StringUtils.isEmpty(user.getUserId())) {
 			return Response.status(400).entity("not login").build();
 		}
-		RestResult result = weixinLogic.unifiedOrder(userId, proId,
-				"192.168.3.66", price);
+		RestResult result = weixinAppPayLogic.unifiedOrder(user.getUserId(), proId,ip, price);
 		return Response.status(200).entity(result).build();
 	}
 
@@ -73,13 +73,14 @@ public class WeixinController extends AbstrackController {
 	 * 微信回调
 	 * 
 	 * @param request
+	 *        请求数据
 	 * @return
 	 */
 	@POST
 	@Path(value = "/callback/pay.action")
 	public Response weiixinCall(@Context HttpRequest request) {
 		logger.info("weixinpay callback 开始...");
-		String str = weixinLogic.callback(request);
+		String str = weixinAppPayLogic.callback(request);
 		logger.info("weixinpay callback 结束...");
 		return Response.status(200).entity(str).build();
 	}
@@ -110,7 +111,7 @@ public class WeixinController extends AbstrackController {
 					transactionId);
 			logger.debug("查询订单的请求数据 ={}" + JSONObject.toJSONString(params));
 			// 调用查询订单接口
-			HttpResult<String> result = weixinLogic.checkOrderStatus(params);
+			HttpResult<String> result = weixinAppPayLogic.checkOrderStatus(params);
 			logger.debug("结束调用微信订单查询接口...");
 			return Response.status(200).entity(result).build();
 		} catch (Exception e) {
@@ -132,21 +133,25 @@ public class WeixinController extends AbstrackController {
 		Map<String, Object> queryParams = null;
 		// 微信的订单号，优先使用
 		if (null == outTradeNo || outTradeNo.length() == 0) {
-			queryParams = ImmutableMap.<String, Object> builder()
+			queryParams = ImmutableMap
+					.<String, Object> builder()
 					.put("appid", ConfigUtil.APPID)
 					.put("mch_id", ConfigUtil.MCH_ID)
 					.put("transaction_id", transactionId)
-					.put("nonce_str", PayCommonUtil.CreateNoncestr()).build();
+					.put("nonce_str", PayCommonUtil.CreateNoncestr())
+					.build();
 		} else {
-			queryParams = ImmutableMap.<String, Object> builder()
+			queryParams = ImmutableMap
+					.<String, Object> builder()
 					.put("appid", ConfigUtil.APPID)
 					.put("mch_id", ConfigUtil.MCH_ID)
 					.put("out_trade_no", outTradeNo)
-					.put("nonce_str", PayCommonUtil.CreateNoncestr()).build();
+					.put("nonce_str", PayCommonUtil.CreateNoncestr())
+					.build();
 		}
 		// key ASCII 排序
 		SortedMap<String, Object> sortMap = MapUtils.sortMap(queryParams);
-		// 签名
+		// MD5签名
 		String createSign = PayCommonUtil.createSign("UTF-8", sortMap);
 		sortMap.put("sign", createSign);
 		return sortMap;

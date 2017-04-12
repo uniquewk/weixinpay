@@ -14,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+import com.fs.module.weixin.bean.config.WeixinPayConfig;
+
 /**
  * 
  * @author wangkai
@@ -22,20 +24,21 @@ import org.xml.sax.SAXException;
  */
 public class PayCommonUtil {
 	private static Logger logger = LoggerFactory.getLogger(PayCommonUtil.class);
-    
+	
 	/**
 	 * 自定义长度随机字符串
 	 * @param length
 	 * @return
 	 */
-	public static String CreateNoncestr(int length) {
-		String chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-		String res = "";
+	public static String createConceStr(int length) {
+		String strs = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+		String str = "";
 		for (int i = 0; i < length; i++) {
-			Random rd = new Random();
-			res += chars.indexOf(rd.nextInt(chars.length() - 1));
+			// str +=strs.substring(0, new Random().nextInt(strs.length()));
+			char achar = strs.charAt(new Random().nextInt(strs.length() - 1));
+			str += achar;
 		}
-		return res;
+		return str;
 	}
     
 	/**
@@ -50,11 +53,6 @@ public class PayCommonUtil {
 			res += chars.charAt(rd.nextInt(chars.length() - 1));
 		}
 		return res;
-	}
-	
-	public static void main(String[] args) {
-		String createNoncestr = PayCommonUtil.CreateNoncestr();
-		System.out.println(createNoncestr);
 	}
 
 	/**
@@ -83,7 +81,30 @@ public class PayCommonUtil {
 		}
 		sb.append("key=" + ConfigUtil.API_KEY);
 		//注意sign转为大写
-		System.out.println(sb.toString());
+		return MD5Util.MD5Encode(sb.toString(), characterEncoding).toUpperCase();
+	}
+	
+	/**
+	 * 签名工具 FOR PUBLIBC
+	 * @param characterEncoding
+	 * @param parameters
+	 * @return
+	 */
+	public static String createSignPublic(String characterEncoding,
+			Map<String, Object> parameters) {
+		StringBuffer sb = new StringBuffer();
+		Iterator<Entry<String, Object>> it = parameters.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry <String,Object>entry = (Map.Entry<String,Object>) it.next();
+			String key = (String) entry.getKey();
+			Object value = entry.getValue();//去掉带sign的项
+			if (null != value && !"".equals(value) && !"sign".equals(key)
+					&& !"key".equals(key)) {
+				sb.append(key + "=" + value + "&");
+			}
+		}
+		sb.append("key=" + WeixinPayConfig.KEY);
+		//注意sign转为大写
 		return MD5Util.MD5Encode(sb.toString(), characterEncoding).toUpperCase();
 	}
 	

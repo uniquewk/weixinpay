@@ -1,5 +1,6 @@
 package com.fs.module.weixin.utils;
 
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -13,6 +14,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
+import org.apache.http.util.Args;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +28,7 @@ import com.alibaba.fastjson.JSONObject;
  * @desc:通用工具类
  */
 public class HttpUtil {
+
 	private static Logger log = LoggerFactory.getLogger(HttpUtil.class);
 
 	/**
@@ -38,9 +41,10 @@ public class HttpUtil {
 	 * @param outputStr
 	 *            提交的数据
 	 * @return 返回微信服务器响应的信息
+	 * @throws Exception
 	 */
 	public static String httpsRequest(String requestUrl, String requestMethod,
-			String outputStr) {
+			String outputStr) throws Exception {
 		try {
 			// 创建SSLContext对象，并使用我们指定的信任管理器初始化
 			TrustManager[] tm = { new FsTrustManager() };
@@ -68,7 +72,7 @@ public class HttpUtil {
 			// 从输入流读取返回内容
 			InputStream inputStream = conn.getInputStream();
 			InputStreamReader inputStreamReader = new InputStreamReader(
-					inputStream, "utf-8");
+					inputStream, "UTF-8");
 			BufferedReader bufferedReader = new BufferedReader(
 					inputStreamReader);
 			String str = null;
@@ -85,10 +89,11 @@ public class HttpUtil {
 			return buffer.toString();
 		} catch (ConnectException ce) {
 			log.error("连接超时：{}", ce);
+			throw new RuntimeException("链接异常" + ce);
 		} catch (Exception e) {
 			log.error("https请求异常：{}", e);
+			throw new RuntimeException("https请求异常" + e);
 		}
-		return null;
 	}
 
 	/**
@@ -101,11 +106,18 @@ public class HttpUtil {
 	 * @return
 	 */
 	public static Token getToken(String appid, String appsecret) {
+		Args.notNull(appid, "appid ");
+		Args.notNull(appsecret, "appsecre ");
 		Token token = null;
 		String requestUrl = ConfigUtil.TOKEN_URL.replace("APPID", appid)
 				.replace("APPSECRET", appsecret);
 		// 发起GET请求获取凭证
-		String httpsRequest = httpsRequest(requestUrl, "GET", null);
+		String httpsRequest = null;
+		try {
+			httpsRequest = httpsRequest(requestUrl, "GET", null);
+		} catch (Exception e) {
+			log.error("http 请求异常 cause " + e.getMessage());
+		}
 		// JSONObject jsonObject =
 		// JSONObject.fromObject(httpsRequest(requestUrl, "GET", null));
 		JSONObject jsonObject = JSONObject.parseObject(httpsRequest);
@@ -127,6 +139,7 @@ public class HttpUtil {
 	}
 
 	public static String urlEncodeUTF8(String source) {
+		Args.notNull(source, "source");
 		String result = source;
 		try {
 			result = java.net.URLEncoder.encode(source, "utf-8");
@@ -135,4 +148,5 @@ public class HttpUtil {
 		}
 		return result;
 	}
+	
 }

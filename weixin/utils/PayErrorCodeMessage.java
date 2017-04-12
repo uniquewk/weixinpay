@@ -18,7 +18,11 @@ public enum PayErrorCodeMessage{
 	TRADE_STATE_REVOKED(60008,"已撤销（刷卡支付）"),
 	TRADE_STATE_USERPAYING(60009,"用户支付中"),
 	TRADE_STATE_PAYERROR(60010,"支付失败"),
-	TRADE_STATE_UNKOWN(60011,"未知的失败状态");
+	TRADE_STATE_UNKOWN(60011,"未知的失败状态"),
+	NO_PARAMS(60012,"请求参数不能为空"),
+	QUERY_FAIL(60013,"查询失败"),
+	QUERY_EXCEPTION(60014,"查询异常"),
+	AMOUNT_LESS(60015,"付款金额不得少于一元");
 	
 	private int index;
 	private String name;

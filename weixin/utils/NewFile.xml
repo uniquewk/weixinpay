@@ -11,7 +11,7 @@
 	<trade_type><![CDATA[APP]]></trade_type>
 </xml>
 
-<xml>
+<!-- <xml>
 	<return_code><![CDATA[FAIL]]></return_code>
 	<return_msg><![CDATA[请参考http://kf.qq.com/faq/140225MveaUz150123neQF7F.html对商户号升级]]></return_msg>
-</xml>
+</xml> -->

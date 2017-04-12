@@ -4,12 +4,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.Date;
+import java.net.InetAddress;
 import java.util.Map;
 import java.util.SortedMap;
 
-import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +17,8 @@ import com.fs.PayApp;
 import com.fs.common.HttpResult;
 import com.fs.common.RestResult;
 import com.fs.common.service.AbstractApp;
+import com.fs.common.service.annotation.AddGuice;
+import com.fs.common.utils.LoggerUtils;
 import com.fs.module.weixin.utils.ConfigUtil;
 import com.fs.module.weixin.utils.DateUtils;
 import com.fs.module.weixin.utils.HttpUtil;
@@ -27,8 +27,9 @@ import com.fs.module.weixin.utils.PayCommonUtil;
 import com.fs.module.weixin.utils.WeixinConstant;
 import com.fs.module.weixin.utils.XMLUtil;
 import com.fs.service.api.pay.IPayService;
+import com.google.common.base.Charsets;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.Inject;
 
 /**
  * 
@@ -36,11 +37,10 @@ import com.google.inject.Inject;
  * @2016年6月1日 下午8:55:36
  * @desc：微信支付逻辑(统一下单,微信回调,订单查询)
  */
-public class WeixinLogic {
+@AddGuice
+public class WeixinAppPayLogic {
 
-	private static final Logger logger = LoggerFactory
-			.getLogger(WeixinLogic.class);
-
+        private static final Logger logger = LoggerFactory.getLogger(WeixinAppPayLogic.class);
 	/**
 	 * 微信预支付 统一下单入口
 	 * 
@@ -54,22 +54,26 @@ public class WeixinLogic {
 	public RestResult unifiedOrder(String userId, String proId, String ip,
 			int price) {
 		try {
-			logger.info("统一下定单开始");
-			// 设置订单参数,
+			LoggerUtils.payLogger.info("统一下定单开始 用户："+userId+" 商品id："+ proId+" ip:"+ip+" 金额:"+price);
 			IPayService payService = (IPayService) AbstractApp
 					.getRpcService("payService");
 			String orderId = payService.weixinPayLog(userId, proId);// 获取订单id
+			if(Strings.isNullOrEmpty(ip)){
+				 InetAddress addr = InetAddress.getLocalHost();
+		          ip = addr.getHostAddress().toString();
+			}
 			// 设置订单参数
-			SortedMap<String, Object> parameters = prepareOrder(ip, orderId,
-					price);
+                        //咪咕体验会员 支付1角购买20秒
+			logger.info("weixin unify order price:{},proId:{}",price,proId);
+			SortedMap<String, Object> parameters = prepareOrder(ip, orderId,price);
 			parameters.put("sign",
-					PayCommonUtil.createSign("UTF-8", parameters));// sign签名 key
+					PayCommonUtil.createSign(Charsets.UTF_8.toString(), parameters));// sign签名 key
 			String requestXML = PayCommonUtil.getRequestXml(parameters);// 生成xml格式字符串
 			String responseStr = HttpUtil.httpsRequest(
 					ConfigUtil.UNIFIED_ORDER_URL, "POST", requestXML);// 带上post
 			// 检验API返回的数据里面的签名是否合法，避免数据在传输的过程中被第三方篡改
 			if (!PayCommonUtil.checkIsSignValidFromResponseString(responseStr)) {
-				logger.error("微信统一下单失败,签名可能被篡改");
+				LoggerUtils.payLogger.error("微信统一下单失败,签名可能被篡改 "+responseStr);
 				return RestResult.fail("统一下单失败");
 			}
 			// 解析结果 resultStr
@@ -77,7 +81,7 @@ public class WeixinLogic {
 					.doXMLParse(responseStr);
 			if (resutlMap != null
 					&& WeixinConstant.FAIL.equals(resutlMap.get("return_code"))) {
-				logger.error("微信统一下单失败,订单编号:" + orderId + ",失败原因:"
+				LoggerUtils.payLogger.error("微信统一下单失败,订单编号: " + orderId + " 失败原因:"
 						+ resutlMap.get("return_msg"));
 				return RestResult.fail("统一下单失败");
 			}
@@ -85,12 +89,12 @@ public class WeixinLogic {
 			// 商户系统先调用该接口在微信支付服务后台生成预支付交易单，返回正确的预支付交易回话标识后再在APP里面调起支付。
 			SortedMap<String, Object> map = buildClientJson(resutlMap);
 			map.put("outTradeNo", orderId);
-			logger.info("统一下定单结束");
+			LoggerUtils.payLogger.info("统一下定单成功 "+map.toString());
 			return RestResult.OK(map);
 		} catch (Exception e) {
-			logger.error(
-					"com.fs.module.weixin.logic.WeixinLogic receipt(String userId,String proId,String ip)：{},{}",
-					userId + "-" + proId + "-" + ip, e.getMessage());
+			LoggerUtils.payLogger.error(
+					"下订单异常com.fs.module.weixin.logic.WeixinLogic receipt(String userId,String proId,String ip)：{},{}",
+					"用户："+userId + " 商品号:" + proId + " IP：" + ip, "失败原因"+e.getMessage());
 			return RestResult.fail("预支付请求失败"); // 抽离到统一错误码泪中 统一定一下
 		}
 
@@ -105,17 +109,21 @@ public class WeixinLogic {
 	 */
 	private SortedMap<String, Object> prepareOrder(String ip, String orderId,
 			int price) {
+		if (PayApp.theApp.isDebug()) {// 测试时候支付一分钱，买入价值6块的20分钟语音
+			price = 1; // 一分钱
+		}
 		Map<String, Object> oparams = ImmutableMap.<String, Object> builder()
 				.put("appid", ConfigUtil.APPID)// 服务号的应用号
 				.put("body", WeixinConstant.PRODUCT_BODY)// 商品描述
 				.put("mch_id", ConfigUtil.MCH_ID)// 商户号 ？
 				.put("nonce_str", PayCommonUtil.CreateNoncestr())// 16随机字符串(大小写字母加数字)
 				.put("out_trade_no", orderId)// 商户订单号
-				.put("total_fee", "1")// 银行币种 price
+				.put("total_fee", price)// 支付金额 单位分 注意:前端负责传入分
 				.put("spbill_create_ip", ip)// IP地址
 				.put("notify_url", ConfigUtil.NOTIFY_URL) // 微信回调地址
 				.put("trade_type", ConfigUtil.TRADE_TYPE)// 支付类型 app
 				.build();
+		logger.info("weixin pay notify_url:{}",ConfigUtil.NOTIFY_URL);
 		return MapUtils.sortMap(oparams);
 	}
 
@@ -129,36 +137,19 @@ public class WeixinLogic {
 	private SortedMap<String, Object> buildClientJson(
 			Map<String, Object> resutlMap) throws UnsupportedEncodingException {
 		// 获取微信返回的签名
-
-		/**
-		 * backObject.put("appid", appid);
-		 * 
-		 * backObject.put("noncestr", payParams.get("noncestr"));
-		 * 
-		 * backObject.put("package", "Sign=WXPay");
-		 * 
-		 * backObject.put("partnerid", payParams.get("partnerid"));
-		 * 
-		 * backObject.put("prepayid", payParams.get("prepayid"));
-		 * 
-		 * backObject.put("appkey", this.appkey);
-		 * 
-		 * backObject.put("timestamp",payParams.get("timestamp"));
-		 * 
-		 * backObject.put("sign",payParams.get("sign"));
-		 */
 		Map<String, Object> params = ImmutableMap.<String, Object> builder()
 				.put("appid", ConfigUtil.APPID)
 				.put("noncestr", PayCommonUtil.CreateNoncestr())
 				.put("package", "Sign=WXPay")
 				.put("partnerid", ConfigUtil.MCH_ID)
 				.put("prepayid", resutlMap.get("prepay_id"))
-				.put("timestamp", DateUtils.getTimeStamp()).build();
-		// key ASCII排序
+				.put("timestamp", DateUtils.getTimeStamp()) // 10 位时间戳
+				.build();
+		// key ASCII排序 // 这里用treemap也是可以的
 		SortedMap<String, Object> sortMap = MapUtils.sortMap(params);
 		sortMap.put("package", "Sign=WXPay");
 		// paySign的生成规则和Sign的生成规则同理
-		String paySign = PayCommonUtil.createSign("UTF-8", sortMap);
+		String paySign = PayCommonUtil.createSign(Charsets.UTF_8.toString(), sortMap);
 		sortMap.put("sign", paySign);
 		return sortMap;
 	}
@@ -174,15 +165,16 @@ public class WeixinLogic {
 		try {
 			String responseStr = parseWeixinCallback(request);
 			Map<String, Object> map = XMLUtil.doXMLParse(responseStr);
+			LoggerUtils.payLogger.info("微信支付回调: "+map.toString());
 			// 校验签名 防止数据泄漏导致出现“假通知”，造成资金损失
 			if (!PayCommonUtil.checkIsSignValidFromResponseString(responseStr)) {
-				logger.error("微信回调失败,签名可能被篡改");
-				return PayCommonUtil.setXML("FAIL", "invalid sign");
+				LoggerUtils.payLogger.error("微信回调失败,签名可能被篡改 "+responseStr);
+				return PayCommonUtil.setXML(WeixinConstant.FAIL, "invalid sign");
 			}
 			if (WeixinConstant.FAIL.equalsIgnoreCase(map.get("result_code")
 					.toString())) {
-				logger.error("微信回调失败");
-				return PayCommonUtil.setXML("FAIL", "weixin pay fail");
+				LoggerUtils.payLogger.error("微信回调失败的原因："+responseStr);
+				return PayCommonUtil.setXML(WeixinConstant.FAIL, "weixin pay fail");
 			}
 			if (WeixinConstant.SUCCESS.equalsIgnoreCase(map.get("result_code")
 					.toString())) {
@@ -190,22 +182,26 @@ public class WeixinLogic {
 				String outTradeNo = (String) map.get("out_trade_no");
 				String transactionId = (String) map.get("transaction_id");
 				String totlaFee = (String) map.get("total_fee");
-				Integer totalPrice = Integer.valueOf(totlaFee);
+				Integer totalPrice = Integer.valueOf(totlaFee)/100;//服务器这边记录的是钱的元
+	                        //咪咕体验会员 支付1角购买20秒
+                                if(Integer.valueOf(totlaFee) == 10){
+                                    totalPrice = 1;
+                                }
 				if (PayApp.theApp.isDebug()) {// 测试时候支付一分钱，买入价值6块的20分钟语音
 					totalPrice = 6;
 				}
-				boolean isOk = updateDB(outTradeNo, transactionId, totalPrice,
-						2);
+				boolean isOk = updateDB(outTradeNo, transactionId, totalPrice,2);
 				// 告诉微信服务器，我收到信息了，不要在调用回调action了
+				LoggerUtils.payLogger.info("回调成功："+responseStr);
 				if (isOk) {
 					return PayCommonUtil.setXML(WeixinConstant.SUCCESS, "OK");
 				} else {
 					return PayCommonUtil
-							.setXML(WeixinConstant.FAIL, "pay fail");
+							.setXML(WeixinConstant.FAIL, "update bussiness outTrade fail");
 				}
 			}
 		} catch (Exception e) {
-			logger.debug("支付失败" + e.getMessage());
+			LoggerUtils.payLogger.error("回调异常" + e.getMessage());
 			return PayCommonUtil.setXML(WeixinConstant.FAIL,
 					"weixin pay server exception");
 		}
@@ -219,17 +215,34 @@ public class WeixinLogic {
 	 * @return
 	 * @throws IOException
 	 */
-	private String parseWeixinCallback(HttpRequest request) throws IOException {
+	private String parseWeixinCallback(HttpRequest request){
+		// 获取微信调用我们notify_url的返回信息
+		String result = "";
 		InputStream inStream = request.getInputStream();
 		ByteArrayOutputStream outSteam = new ByteArrayOutputStream();
-		byte[] buffer = new byte[1024];
-		int len = 0;
-		while ((len = inStream.read(buffer)) != -1) {
-			outSteam.write(buffer, 0, len);
+		try {
+			byte[] buffer = new byte[1024];
+			int len = 0;
+			while ((len = inStream.read(buffer)) != -1) {
+				outSteam.write(buffer, 0, len);
+			}
+			result = new String(outSteam.toByteArray(), Charsets.UTF_8.toString());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}finally{
+			try {
+				if(outSteam != null){
+					outSteam.close();
+					outSteam = null;
+				}
+				if(inStream != null){
+					inStream.close();
+					inStream = null;
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
-		outSteam.close();
-		inStream.close();
-		String result = new String(outSteam.toByteArray(), "utf-8");// 获取微信调用我们notify_url的返回信息
 		return result;
 	}
 
@@ -265,7 +278,7 @@ public class WeixinLogic {
 			}
 			// 校验签名
 			if (!PayCommonUtil.checkIsSignValidFromResponseString(responseStr)) {
-				logger.error("订单查询失败,签名可能被篡改");
+				LoggerUtils.payLogger.error("订单查询失败,签名可能被篡改："+responseStr);
 				return HttpResult.error(3, "签名错误");
 			}
 			// 判断支付状态
@@ -281,7 +294,7 @@ public class WeixinLogic {
 			} else if (tradeState.equals("CLOSED")) {
 				return HttpResult.error(7, "已关闭");
 			} else if (tradeState.equals("REVOKED")) {
-				return HttpResult.error(8, "已撤销（刷卡支付");
+				return HttpResult.error(8, "已撤销（刷卡支付)");
 			} else if (tradeState.equals("USERPAYING")) {
 				return HttpResult.error(9, "用户支付中");
 			} else if (tradeState.equals("PAYERROR")) {
@@ -290,7 +303,7 @@ public class WeixinLogic {
 				return HttpResult.error(11, "未知的失败状态");
 			}
 		} catch (Exception e) {
-			logger.error("订单查询失败,查询参数 = {}", JSONObject.toJSONString(params));
+			LoggerUtils.payLogger.error("订单查询失败,查询参数 = {}", JSONObject.toJSONString(params));
 			return HttpResult.success(1, "订单查询失败");
 		}
 	}
