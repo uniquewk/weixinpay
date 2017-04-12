@@ -13,13 +13,13 @@ public class ConceStrUtils {
 	public static String createConceStr() {
 		String strs = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 		int length = 16;
-		String str = "";
+		StringBuilder builder = new StringBuilder();
 		for (int i = 0; i < length; i++) {
 			// str +=strs.substring(0, new Random().nextInt(strs.length()));
 			char achar = strs.charAt(new Random().nextInt(strs.length() - 1));
-			str += achar;
+			builder.append(achar);
 		}
-		return str;
+		return builder.toString();
 	}
 
 	public static void main(String[] args) {
