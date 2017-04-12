@@ -1,10 +1,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.fs.fishsaying</groupId>
-	<artifactId>fishsaying-pay</artifactId>
+	<groupId>com.fs.****</groupId>
+	<artifactId>****-pay</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>fishsaying-pay</name>
+	<name>****-pay</name>
 	<url>http://maven.apache.org</url>
 
 	<properties>
@@ -110,17 +110,7 @@
 			<version>0.6</version>
 		</dependency>
 
-		<dependency>
-			<groupId>com.fs.common</groupId>
-			<artifactId>fs-common-service</artifactId>
-			<version>0.0.2</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.apache.httpcomponents</groupId>
-					<artifactId>httpclient</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
+		
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
@@ -166,16 +156,6 @@
 			<groupId>org.jboss.resteasy</groupId>
 			<artifactId>resteasy-jackson-provider</artifactId>
 			<version>2.3.5.Final</version>
-		</dependency>
-		<dependency>
-			<groupId>com.fs.fishsaying-service-api</groupId>
-			<artifactId>fishsaying-service-api</artifactId>
-			<version>0.0.1</version>
-		</dependency>
-		<dependency>
-			<groupId>com.fs.fs-common-db</groupId>
-			<artifactId>fs-common-db</artifactId>
-			<version>0.0.2</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
