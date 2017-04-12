@@ -145,7 +145,7 @@ public class WeixinAppPayLogic {
 				.put("prepayid", resutlMap.get("prepay_id"))
 				.put("timestamp", DateUtils.getTimeStamp()) // 10 位时间戳
 				.build();
-		// key ASCII排序 // 这里用treemap也是可以的
+		// key ASCII排序 // 这里用treemap也是可以的 可以用treemap // TODO
 		SortedMap<String, Object> sortMap = MapUtils.sortMap(params);
 		sortMap.put("package", "Sign=WXPay");
 		// paySign的生成规则和Sign的生成规则同理
@@ -233,11 +233,11 @@ public class WeixinAppPayLogic {
 			try {
 				if(outSteam != null){
 					outSteam.close();
-					outSteam = null;
+					outSteam = null; // help GC
 				}
 				if(inStream != null){
 					inStream.close();
-					inStream = null;
+					inStream = null;// help GC
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -309,7 +309,7 @@ public class WeixinAppPayLogic {
 	}
     
 	/**
-	 * 操作本地服务 支付数据持久化
+	 * 操作本地服务 支付数据持久化 (^-^) 本地操作的代码需要根据自己的业务来实现 这里就不给出具体的代码实现
 	 * @param outTradeNo
 	 * @param tradeNo
 	 * @param price
