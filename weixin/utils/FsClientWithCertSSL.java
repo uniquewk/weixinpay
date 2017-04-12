@@ -62,7 +62,7 @@ import com.google.common.base.Charsets;
  * 
  * @author wangkai
  * @2016年7月20日 下午3:16:14
- * @desc:通过鱼说微信支付的企业证书建立安全连接
+ * @desc:通过微信支付的企业证书建立安全连接
  */
 @SuppressWarnings("deprecation")
 public class FsClientWithCertSSL {
